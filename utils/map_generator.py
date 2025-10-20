@@ -39,4 +39,4 @@ def close_entities(entities:list[StaticObject], pos:list[float]) -> list[StaticO
 static_entities:list = []
 for _ in range(entities_number):
     static_entities.append(StaticObject(x = randint(1, size_map - 1), y = randint(1, size_map - 1)))
-static_entities.append(StaticObject(x = 12, y = 12))
+static_entities.append(StaticObject(x = 8, y = 8))

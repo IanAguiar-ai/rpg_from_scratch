@@ -99,11 +99,15 @@ class BaseEntity:
                 self.last_click_world = (wx, wy)
                 self.times[self.next_action] = 0
                 if self.functions[self.next_action] != None:
-                    temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy))
+                    if self.next_action == "space": # Ability
+                        temp_actions = self.functions[self.next_action](player = self, target = (wx, wy))
+                    else: # Atack
+                        temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy))
                     if type(temp_actions) != list:
                         temp_actions:list = [temp_actions]
-                    actions.extend(temp_actions)
-                self.next_action:str = None
+                    if temp_actions[0] != None:
+                        actions.extend(temp_actions)
+                #self.next_action:str = None
 
             self._lmb_prev = lmb
 
@@ -125,7 +129,7 @@ class BaseEntity:
 
         # keys
         for index, key in enumerate(["q", "e", "space"]):
-            box = pygame.Rect(self.max_hp + 20, 10 + index*7, int(self.times[key]), 6)
+            box = pygame.Rect(self.max_hp + 20, 10 + index*7, int(self.times[key]/self.times[f"max_{key}"]*50), 6)
             pygame.draw.rect(screen, (200, 200, 150) if key == self.next_action else (150, 200, 100), box)
             self.times[key] = min(self.times[key] + 1, self.times[f"max_{key}"])
 
@@ -216,18 +220,21 @@ class BaseWeapon:
 
 
 #######################################################################################
-def simple_projectile(owner, target, damage:int = 20, speed:float = 0.25, size = 0.03, life_span = 25):
+def simple_projectile(owner, target, damage:int = 20, speed:float = 0.25, size = 0.03, life_span = 25, player = None):
     """More simple projectile"""
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span)
 
-def fragmentation(owner, target, damage:int = 10, speed:float = 0.1, size = 0.03, life_span = 15):
-    return [BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = [target[0] + x, target[1] + y],
-                    size = size, life_span = life_span) for x, y in ((-3, -3), (-3, 3), (3, -3), (3, 3))]
+def fragmentation(owner, target, damage:int = 25, speed:float = 0.07, size = 0.04, life_span = 20, player = None):
+    return [BaseAtk(damage = damage, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
+                    size = size, life_span = life_span) for x, y in ((-3, -3), (-3, 3), (3, -3), (3, 3), (3, 0), (0, 3), (-3, 0), (0, -3))]
 
-def projectile_with_fragmentation(owner, target, damage:int = 30, speed:float = 0.2, size = 0.03, life_span = 20):
+def projectile_with_fragmentation(owner, target, damage:int = 50, speed:float = 0.15, size = 0.06, life_span = 40, player = None):
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
-                   size = size, life_span = life_span, dead = fragmentation, dead_collision = fragmentation)
+                   size = size, life_span = life_span, dead = fragmentation, dead_collision = None)
+
+def ability_transportation(player:BaseEntity, target:list[float]):
+    player.pos = [target[0], target[1]]
 
 weapons:dict[dict] = {}
 
@@ -238,7 +245,7 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                  "aceleration":0.005,
                                  "q":projectile_with_fragmentation,
                                  "e":simple_projectile,
-                                 "space":None,
+                                 "space":ability_transportation,
                                  "q_time":120,
                                  "e_time":30,
                                  "space_time":1200,
