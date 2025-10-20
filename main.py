@@ -2,7 +2,7 @@
 import pygame
 
 # My:
-from utils.map_generator import static_entities, StaticObject, close_entities
+from utils.map_generator import STATIC_ENTITIES, StaticObject, close_entities
 from utils.characters_and_weapons import BaseEntity, weapons, characters, zoom_map
 from utils.functions import suavization
 
@@ -11,9 +11,11 @@ from utils.functions import suavization
 
 ###############################################################################
 if __name__ == "__main__":
-    player = BaseEntity(**characters["mage"])
+    player = BaseEntity(**characters["archer"])
+    player.player = True
+
     main_pos:list = [0, 0]
-    _TO_RENDER_:list[StaticObject] = close_entities(static_entities, main_pos)
+    _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
     _ACTIONS_:list = []
 
     pygame.init()
@@ -39,6 +41,13 @@ if __name__ == "__main__":
         # Player:
         player.action(_TO_RENDER_, main_pos, _ACTIONS_)
         player.plot(screen, main_pos)
+        
+        for act in _TO_RENDER_:
+            if type(act) == BaseEntity:
+                temporary_TO_RENDER_ = _TO_RENDER_.copy()
+                temporary_TO_RENDER_.remove(act)
+                act.action(temporary_TO_RENDER_, main_pos, _ACTIONS_)
+        _TO_RENDER_ = [a for a in _TO_RENDER_ if getattr(a, "alive", True)]
 
         # Others:
         for act in _ACTIONS_:
@@ -57,7 +66,10 @@ if __name__ == "__main__":
         suavization(main_pos, [player.pos[0] - W//(zoom_map*2), player.pos[1] - H//(zoom_map*2)]) # Pos screen
 
         if (_TICK_ % 60) == 0:
-            _TO_RENDER_:list[StaticObject] = close_entities(static_entities, main_pos)
+            for index in range(len(_TO_RENDER_)):
+                if not _TO_RENDER_[index] in STATIC_ENTITIES:
+                    STATIC_ENTITIES.append(_TO_RENDER_[index])
+            _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
             #print(f"{len(_TO_RENDER_) = } | {main_pos = }")
             #print(len(_ACTIONS_))
 

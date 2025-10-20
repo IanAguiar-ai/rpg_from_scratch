@@ -11,3 +11,13 @@ A rpg from scratch.
     - Life and cooldown of attacks;
     - Distance-based selective rendering;
     - Collisions between projectiles and entities.
+
+# Projects
+
+- Simple
+- Explosive
+
+# Abilities
+
+- Teletransport
+- Wall
