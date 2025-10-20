@@ -5,8 +5,8 @@ A rpg from scratch.
 # Updates
 
 - 0.0.1:
-    - Screen that follows
-    - Basic statuses
-    - Collision with static objects
-    - Life and cooldown of attacks
-    - Distance-based selective rendering
+    - Screen that follows;
+    - Basic statuses;
+    - Collision with static objects;
+    - Life and cooldown of attacks;
+    - Distance-based selective rendering.
