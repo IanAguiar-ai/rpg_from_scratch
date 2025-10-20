@@ -9,4 +9,5 @@ A rpg from scratch.
     - Basic statuses;
     - Collision with static objects;
     - Life and cooldown of attacks;
-    - Distance-based selective rendering.
+    - Distance-based selective rendering;
+    - Collisions between projectiles and entities.

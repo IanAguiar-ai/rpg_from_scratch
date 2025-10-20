@@ -1,5 +1,6 @@
 # Others:
 import pygame
+import math
 
 zoom_map:int = 100
 
@@ -10,8 +11,7 @@ def _aabb_overlap(ax:float, ay:float, asize:float, bx:float, by:float, bsize:flo
 
 #######################################################################################
 class BaseEntity:
-    def __init__(self, name:str, hp:float, speed:float, aceleration:float, size:float, q, e, space, q_time:int, e_time:int, space_time:int, frame:str = None, pos:list[float] = [5, 5],
-                 q_function = None, e_function = None, space_function = None) -> None:
+    def __init__(self, name:str, hp:float, speed:float, aceleration:float, size:float, q, e, space, q_time:int, e_time:int, space_time:int, frame:str = None, pos:list[float] = [5, 5]) -> None:
 
         # Atributes
         self.name:str = name
@@ -26,12 +26,9 @@ class BaseEntity:
         self.pos_aceleration:list[float] = [0, 0]
 
         # Actions
-        self.q = q
-        self.e = e
-        self.space = space
         self.times:dict = {"q":q_time, "e":e_time, "space":space_time,
                            "max_q":q_time, "max_e":e_time, "max_space":space_time}
-        self.functions:dict = {"q":q_function, "e":e_function, "space":space_function}
+        self.functions:dict = {"q":q, "e":e, "space":space}
         self.next_action:str = None
         self._lmb_prev:bool = False  # left botton mouse
         self.last_click_world:list = None
@@ -39,7 +36,7 @@ class BaseEntity:
         # Frames
         self.frame:str = frame
 
-    def action(self, colliders:list, main_pos:list[float]) -> None:
+    def action(self, colliders:list, main_pos:list[float], actions:list) -> None:
         # Moviment
         self.pos_aceleration[0] *= 0.9
         self.pos_aceleration[1] *= 0.9
@@ -101,6 +98,11 @@ class BaseEntity:
                 wy = main_pos[1] + sy/zoom_map
                 self.last_click_world = (wx, wy)
                 self.times[self.next_action] = 0
+                if self.functions[self.next_action] != None:
+                    temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy))
+                    if type(temp_actions) != list:
+                        temp_actions:list = [temp_actions]
+                    actions.extend(temp_actions)
                 self.next_action:str = None
 
             self._lmb_prev = lmb
@@ -124,10 +126,109 @@ class BaseEntity:
         # keys
         for index, key in enumerate(["q", "e", "space"]):
             box = pygame.Rect(self.max_hp + 20, 10 + index*7, int(self.times[key]), 6)
-            pygame.draw.rect(screen, (150, 200, 100), box)
+            pygame.draw.rect(screen, (200, 200, 150) if key == self.next_action else (150, 200, 100), box)
             self.times[key] = min(self.times[key] + 1, self.times[f"max_{key}"])
 
 #######################################################################################
+class BaseAtk:
+    def __init__(self, damage:int, speed:float, pos:list[float], pos_final:list[float], poison:int = None, size:float = 0.01, life_span:int = 10, dead = None, dead_collision = None) -> None:
+        self.damage:int = damage
+        self.speed:float = speed
+        self.poison:int = poison
+        self.pos_final:list[float] = pos_final
+        self.pos = pos.copy()
+        self.size:float = size
+        self.life_span:int = life_span
+        self.alive:bool = True
+        self.dead = dead
+        self.dead_collision = dead_collision
+
+        # Normalized velocity
+        dx = self.pos_final[0] - self.pos[0]
+        dy = self.pos_final[1] - self.pos[1]
+        n = math.hypot(dx, dy) or 1.0
+        ux, uy = dx / n, dy / n
+        self.vx = ux * self.speed
+        self.vy = uy * self.speed
+
+    def _reached_target(self) -> bool:
+        tx = self.pos_final[0] - self.pos[0]
+        ty = self.pos_final[1] - self.pos[1]
+        if (tx * tx + ty * ty) <= (self.speed * self.speed): # If the distance is small, consider that you have arrived
+            return True
+        return (tx * self.vx + ty * self.vy) <= 0.0 # If the movement in the opposite direction to the target, passed the point
+
+    def action(self, colliders:list, actions:list) -> None:
+        if not self.alive:
+            if self.dead != None:
+                temp_action = self.dead(self.pos, self.pos)
+                if type(temp_action) != list:
+                    temp_action:list = [temp_action]
+                actions.extend(temp_action)
+            return
+
+        self.pos[0] += self.vx
+        self.pos[1] += self.vy
+
+        self.life_span -= 1
+        if self.life_span <= 0 or self._reached_target():
+            self.alive = False
+            if self.dead != None:
+                temp_action = self.dead(self.pos, self.pos)
+                if type(temp_action) != list:
+                    temp_action:list = [temp_action]
+                actions.extend(temp_action)
+            return
+
+        for ent in colliders:
+            if getattr(ent, "colision", False):
+                if _aabb_overlap(self.pos[0], self.pos[1], self.size,
+                                 ent.pos[0], ent.pos[1], ent.size):
+                    # aplicar dano se tiver hp
+                    if hasattr(ent, "hp"):
+                        ent.hp = max(0, float(ent.hp) - self.damage)
+                        if ent.hp <= 0 and hasattr(ent, "die"):
+                            try:
+                                ent.die()
+                            except Exception:
+                                pass
+
+                    self.alive = False
+                    if self.dead_collision != None:
+                        temp_action = self.dead_collision(self.pos, self.pos)
+                        if type(temp_action) != list:
+                           temp_action:list = [temp_action]
+                        actions.extend(temp_action)
+                    break
+
+
+    def plot(self, screen, main_pos:list[float]) -> None:
+        if not self.alive:
+            return
+
+        x = int((self.pos[0] - main_pos[0]) * zoom_map)
+        y = int((self.pos[1] - main_pos[1]) * zoom_map)
+        s = int(self.size * zoom_map)
+        pygame.draw.rect(screen, (255, 230, 120), pygame.Rect(x, y, s, s))
+
+class BaseWeapon:
+    pass
+
+
+#######################################################################################
+def simple_projectile(owner, target, damage:int = 20, speed:float = 0.25, size = 0.03, life_span = 25):
+    """More simple projectile"""
+    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+                   size = size, life_span = life_span)
+
+def fragmentation(owner, target, damage:int = 10, speed:float = 0.1, size = 0.03, life_span = 15):
+    return [BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = [target[0] + x, target[1] + y],
+                    size = size, life_span = life_span) for x, y in ((-3, -3), (-3, 3), (3, -3), (3, 3))]
+
+def projectile_with_fragmentation(owner, target, damage:int = 30, speed:float = 0.2, size = 0.03, life_span = 20):
+    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+                   size = size, life_span = life_span, dead = fragmentation, dead_collision = fragmentation)
+
 weapons:dict[dict] = {}
 
 #######################################################################################
@@ -135,11 +236,11 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                  "hp":100, # base
                                  "speed":0.03, # pixel per frame
                                  "aceleration":0.005,
-                                 "q":None,
-                                 "e":None,
+                                 "q":projectile_with_fragmentation,
+                                 "e":simple_projectile,
                                  "space":None,
-                                 "q_time":30,
-                                 "e_time":120,
+                                 "q_time":120,
+                                 "e_time":30,
                                  "space_time":1200,
                                  "size":0.2},
                          "archer":{"name":"Archer",
