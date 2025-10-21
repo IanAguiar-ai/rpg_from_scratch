@@ -11,8 +11,9 @@ from utils.functions import suavization
 
 ###############################################################################
 if __name__ == "__main__":
-    player = BaseEntity(**characters["archer"])
+    player = BaseEntity(**characters["mage"])
     player.player = True
+    player.colision = True
 
     main_pos:list = [0, 0]
     _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
@@ -26,6 +27,7 @@ if __name__ == "__main__":
 
     # fonte padrao
     fonte = pygame.font.SysFont(None, 32)
+    
 
     _TICK_:int = 0
     while True:
@@ -39,19 +41,19 @@ if __name__ == "__main__":
         screen.fill((0, 0, 0))
 
         # Player:
-        player.action(_TO_RENDER_, main_pos, _ACTIONS_)
+        player.action(_TO_RENDER_, main_pos, _ACTIONS_, player)
         player.plot(screen, main_pos)
         
         for act in _TO_RENDER_:
             if type(act) == BaseEntity:
                 temporary_TO_RENDER_ = _TO_RENDER_.copy()
                 temporary_TO_RENDER_.remove(act)
-                act.action(temporary_TO_RENDER_, main_pos, _ACTIONS_)
+                act.action(temporary_TO_RENDER_, main_pos, _ACTIONS_, player)
         _TO_RENDER_ = [a for a in _TO_RENDER_ if getattr(a, "alive", True)]
 
         # Others:
         for act in _ACTIONS_:
-            act.action(_TO_RENDER_, _ACTIONS_)
+            act.action(_TO_RENDER_, _ACTIONS_, player)
             act.plot(screen, main_pos)
         _ACTIONS_ = [a for a in _ACTIONS_ if getattr(a, "alive", True)] # Remove not actions have end
 
