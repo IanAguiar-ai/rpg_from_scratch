@@ -73,3 +73,9 @@ enemy_temp["pos"] = [2, 4]
 enemy_temp["enemy"] = True
 enemy_temp["colision"] = True
 STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
+
+enemy_temp:dict = characters["archer"].copy()
+enemy_temp["pos"] = [2, 4]
+enemy_temp["enemy"] = True
+enemy_temp["colision"] = True
+STATIC_ENTITIES.append(BaseEntity(**enemy_temp))

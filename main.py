@@ -11,7 +11,7 @@ from utils.functions import suavization
 
 ###############################################################################
 if __name__ == "__main__":
-    player = BaseEntity(**characters["mage"])
+    player = BaseEntity(**characters["archer"])
     player.player = True
     player.colision = True
 

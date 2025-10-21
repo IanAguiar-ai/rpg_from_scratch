@@ -180,7 +180,7 @@ class BaseEntity:
 
             # Mouse
             if (self.next_action != None) and (self.times[self.next_action] == self.times[f"max_{self.next_action}"]):
-                print(self.next_action, mouse_pos)
+                #print(self.next_action, mouse_pos)
                 wx, wy = mouse_pos[0], mouse_pos[1]
                 self.last_click_world = (wx, wy)
                 self.times[self.next_action] = 0
@@ -212,7 +212,7 @@ class BaseEntity:
             box = pygame.Rect(10, 10, int(self.hp/self.max_hp * 100), 20)
             pygame.draw.rect(screen, (255, 100, 100), box)
             fonte = pygame.font.SysFont(None, 30)
-            text = fonte.render(f"{int(self.hp)}/{self.max_hp}", True, (0, 0, 0))
+            text = fonte.render(f"{int(self.hp)}/{self.max_hp}", True, (255, 255, 255))
             screen.blit(text, (20, 10))
 
             # keys
@@ -222,7 +222,7 @@ class BaseEntity:
         else:
             box = pygame.Rect(x, y - 10, int(self.hp), 4)
             pygame.draw.rect(screen, (180, 80, 80), box)
-            
+
 
 #######################################################################################
 class BaseAtk:
@@ -339,14 +339,14 @@ def enemy_movement_simple(obj:[BaseEntity], colliders:list, main_pos:list[float]
 def enemy_movement_agro(obj:[BaseEntity], colliders:list, main_pos:list[float], actions:list, player:BaseEntity) -> "str":
     if random() > 1/(euclidean(obj.pos, player.pos)+1):
         if abs(obj.pos[0] - player.pos[0]) > abs(obj.pos[1] - player.pos[1]):
-            if obj.pos[0] - player.pos[0] < -.4:
+            if obj.pos[0] - player.pos[0] < -(.4 + obj.size):
                 return "d"
-            elif obj.pos[0] - player.pos[0] >= .4:
+            elif obj.pos[0] - player.pos[0] >= .4 + obj.size:
                 return "a"
         else:
-            if obj.pos[1] - player.pos[1] < -.4:
+            if obj.pos[1] - player.pos[1] < -(.4 + obj.size):
                 return "s"
-            elif obj.pos[1] - player.pos[1] >= .4:
+            elif obj.pos[1] - player.pos[1] >= .4 + obj.size:
                 return "w"
 
 ######################################################################################
@@ -357,7 +357,7 @@ def enemy_atk_simple(obj:[BaseEntity], colliders:list, main_pos:list[float], act
         return None, None
 
 def enemy_atk_agro(obj:[BaseEntity], colliders:list, main_pos:list[float], actions:list, player:BaseEntity) -> ("str", list[float]):
-    if (random() > 0.95) and (euclidean(obj.pos, player.pos) < 1.2):
+    if (random() > 0.95) and (euclidean(obj.pos, player.pos) < 1.2 + obj.size):
         return ["q", "e", "space"][randint(0, 2)], [player.pos[0], player.pos[1]]
     else:
         return None, None
@@ -365,6 +365,7 @@ def enemy_atk_agro(obj:[BaseEntity], colliders:list, main_pos:list[float], actio
 #######################################################################################
 def projectile_simple(owner, target, _id, damage:int = 20, speed:float = 0.25, size = 0.03, life_span = 25, player = None):
     """More simple projectile"""
+    target = [(target[0] - owner[0])/speed * life_span, (target[1] - owner[1])/speed * life_span]
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
@@ -377,10 +378,11 @@ def projectile_with_fragmentation(owner, target, _id, damage:int = 50, speed:flo
                    size = size, life_span = life_span, dead = fragmentation, dead_collision = None, id = _id)
 
 def projectile_arrow(owner, target, _id, damage:int = 20, speed:float = 0.4, size = 0.03, life_span = 25, player = None):
+    target = [(target[0] - owner[0])/speed * life_span, (target[1] - owner[1])/speed * life_span]
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def projectile_around(owner, target, _id, damage:int = 25, speed:float = 0.04, size = 0.04, life_span = 40, player = None):
+def projectile_around(owner, target, _id, damage:int = 30, speed:float = 0.04, size = 0.04, life_span = 40, player = None):
     return [BaseAtk(damage = damage, speed = speed, pos = [target[0] + x, target[1] + y], pos_final = [target[0], target[1]],
                     size = size, life_span = life_span, id = _id) for x, y in ((-1, -1), (-1, 1), (1, -1), (1, 1))]
 
@@ -402,7 +404,6 @@ def ability_create_barrier(player:BaseEntity, target:list[float], colliders:list
 
 def ability_cure(player:BaseEntity, target:list[float], colliders:list = None):
     player.hp = min(int(player.hp + player.max_hp*.2), player.max_hp)
-
 
 weapons:dict[dict] = {}
 
@@ -430,7 +431,9 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "q_time":150,
                                    "e_time":30,
                                    "space_time":1200,
-                                   "size":0.2},
+                                   "size":0.25,
+                                   "enemy_movement":enemy_movement_simple,
+                                   "enemy_atk":enemy_atk_simple},
                          "slime":{"name":"Slime",
                                    "hp":30, # base
                                    "speed":0.04, # pixel per frame
