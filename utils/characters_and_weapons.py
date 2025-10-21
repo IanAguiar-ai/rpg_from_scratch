@@ -396,12 +396,20 @@ def projectile_large_sword(owner, target, _id, damage:int = 20, speed:float = 0.
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def chance_fragmentation(owner, target, _id, damage:int = 15, speed:float = 0.07, size = 0.04, life_span = 20, player = None):
-    for i in range(randint(0, 2)):
+def chance_fragmentation(owner, target, _id, damage:int = 15, speed:float = 0.06, size = 0.04, life_span = 15, player = None):
+    times:int = randint(0, 2) if random() > 0.1 else 0
+    if times > 0:
+        temp_atk:list = []
+        for i in range(times):
+            temp_atk.append(BaseAtk(damage = damage, speed = speed, pos = [owner[0], owner[1]],
+                                    pos_final = [target[0] + (random()-0.5)*6, target[1] + (random()-0.5)*6],
+                                    size = size, life_span = life_span, id = _id, dead = chance_fragmentation))
+        return temp_atk
+    else:
         return [BaseAtk(damage = damage, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
-                        size = size, life_span = life_span, id = _id, dead = chance_fragmentation) for x, y in [(random()-0.5)*6, (random()-0.5)*6]]
+                            size = size, life_span = life_span, id = _id) for x, y in [[(random()-0.5)*6, (random()-0.5)*6]]]
 
-def projectile_chance_fragmentation(owner, target, _id, damage:int = 30, speed:float = 0.15, size = 0.06, life_span = 30, player = None):
+def projectile_chance_fragmentation(owner, target, _id, damage:int = 30, speed:float = 0.15, size = 0.07, life_span = 30, player = None):
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, dead = chance_fragmentation, dead_collision = None, id = _id)
 
@@ -440,7 +448,7 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "speed":0.04, # pixel per frame
                                    "aceleration":0.01,
                                    "q":projectile_around,
-                                   "e":projectile_chance_fragmentation,
+                                   "e":projectile_arrow,
                                    "space":ability_create_barries,
                                    "q_time":150,
                                    "e_time":30,
