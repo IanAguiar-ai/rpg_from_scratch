@@ -49,9 +49,27 @@ STATIC_ENTITIES.append(StaticObject(x = 8, y = 8))
 
 
 # Enemies
-for _ in range(_NUMER_ENEMIES_):
-    enemy_temp:dict = characters["slime"]
-    enemy_temp["pos"] = [3, 3]
-    enemy_temp["enemy"] = True
-    enemy_temp["colision"] = True
-    STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
+#for _ in range(_NUMER_ENEMIES_):
+#    enemy_temp:dict = characters["slime"]
+#    enemy_temp["pos"] = [randint(1, size_map - 1), randint(1, size_map - 1)]
+#    enemy_temp["enemy"] = True
+#    enemy_temp["colision"] = True
+#    STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
+
+enemy_temp:dict = characters["slime"].copy()
+enemy_temp["pos"] = [3, 3]
+enemy_temp["enemy"] = True
+enemy_temp["colision"] = True
+STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
+
+enemy_temp:dict = characters["wolf"].copy()
+enemy_temp["pos"] = [4, 3]
+enemy_temp["enemy"] = True
+enemy_temp["colision"] = True
+STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
+
+enemy_temp:dict = characters["mage"].copy()
+enemy_temp["pos"] = [2, 4]
+enemy_temp["enemy"] = True
+enemy_temp["colision"] = True
+STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
