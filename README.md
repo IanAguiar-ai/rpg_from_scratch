@@ -11,7 +11,12 @@ A rpg from scratch.
     - Life and cooldown of attacks;
     - Distance-based selective rendering;
     - Collisions between projectiles and entities;
-    - Enemies.
+    - Enemies;
+    - Coin;
+    - Exp;
+    - Drop in die;
+    - Levels;
+    - Level system.
 
 # Projects
 

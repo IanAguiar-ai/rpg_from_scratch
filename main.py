@@ -3,7 +3,7 @@ import pygame
 
 # My:
 from utils.map_generator import STATIC_ENTITIES, StaticObject, close_entities
-from utils.characters_and_weapons import BaseEntity, weapons, characters, zoom_map
+from utils.characters_and_weapons import BaseEntity, weapons, characters, zoom_map, W, H
 from utils.functions import suavization
 
 
@@ -11,7 +11,7 @@ from utils.functions import suavization
 
 ###############################################################################
 if __name__ == "__main__":
-    player = BaseEntity(**characters["archer"])
+    player = BaseEntity(**characters["mage"])
     player.player = True
     player.colision = True
 
@@ -20,7 +20,6 @@ if __name__ == "__main__":
     _ACTIONS_:list = []
 
     pygame.init()
-    W, H = 1600, 900
     screen = pygame.display.set_mode((W, H))
     pygame.display.set_caption("RPG")
     clock = pygame.time.Clock()

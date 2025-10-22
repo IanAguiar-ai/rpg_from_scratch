@@ -4,19 +4,22 @@ import math
 from random import random, randint
 
 zoom_map:int = 100
+W, H = 1600, 900
 
 #######################################################################################
 class BaseEntity:
     def __init__(self, name:str, hp:float, speed:float, aceleration:float, size:float,
                  q = None, e = None, space = None, q_time:int = 120, e_time:int = 30, space_time:int = 1200,
                  frame:str = None, pos:list[float] = [5, 5], colision:bool = False, 
-                 player:bool = False, enemy:bool = False, enemy_movement = None, enemy_atk = None) -> None:
+                 player:bool = False, enemy:bool = False, enemy_movement = None, enemy_atk = None,
+                 level:int = 0, exp:int = 0, coin:int = 0,
+                 die = None) -> None:
         self._id:str = f"{randint(0, 999_999_999):09}"
 
         # Atributes
         self.name:str = name
-        self.hp:float = hp
-        self.max_hp:float = hp
+        self.max_hp:float = int(hp*1.1**level)
+        self.hp:float = self.max_hp
         self.speed:float = speed
         self.aceleration:float = aceleration
         self.size:float = size
@@ -24,6 +27,14 @@ class BaseEntity:
         self.enemy:bool = enemy
         self.colision:bool = colision
         self.alive:bool = True
+        self.level:int = level
+        self.exp:int = exp
+        self.coin:int = coin
+        self.next_level = int(100*1.5**self.level)
+        
+        if (die != None) and type(die) != list:
+            die = [die]
+        self.die = die
 
         # Position
         self.pos:list[float] = pos
@@ -43,6 +54,15 @@ class BaseEntity:
         self.frame:str = frame
 
     def action(self, colliders:list, main_pos:list[float], actions:list, player) -> None:
+        # Level
+        if self.exp > self.next_level:
+            self.coin += 50
+            self.next_level = int(100*1.5**self.level)
+            self.level += 1
+            self.level = min(self.level, 50)
+            self.max_hp:int = int(self.max_hp*1.1)
+            self.hp:int = int(self.max_hp)
+
         # movement
         if self.hp <= 0:
             self.alive:bool = False
@@ -219,6 +239,22 @@ class BaseEntity:
             for index, key in enumerate(["q", "e", "space"]):
                 box = pygame.Rect(self.max_hp + 20, 10 + index*7, int(self.times[key]/self.times[f"max_{key}"]*50), 6)
                 pygame.draw.rect(screen, (200, 200, 150) if key == self.next_action else (150, 200, 100), box)
+
+            # Coin, exp and level
+            fonte = pygame.font.SysFont(None, 22)
+            coin = fonte.render(f"Coin: {self.coin}", True, (240, 215, 90))
+            exp = fonte.render(f"Exp: {self.exp}/{self.next_level}", True, (180, 180, 255))
+            screen.blit(coin, (W - 100, 10))
+            screen.blit(exp, (W - 210, 10))
+
+            box = pygame.Rect(W - 220, 30, 210, 20)
+            pygame.draw.rect(screen, (110, 110, 200), box)
+            box = pygame.Rect(W - 210, 30, int(self.exp/self.next_level*200), 20)
+            pygame.draw.rect(screen, (140, 140, 240), box)
+            level = fonte.render(f"Level: {self.level}", True, (255, 255, 255))
+            screen.blit(level, (W - 160, 32))
+
+
         else:
             box = pygame.Rect(x, y - 10, int(self.hp), 4)
             pygame.draw.rect(screen, (180, 80, 80), box)
@@ -227,7 +263,8 @@ class BaseEntity:
 #######################################################################################
 class BaseAtk:
     def __init__(self, damage:int, speed:float, pos:list[float], pos_final:list[float], id:str, poison:int = None, size:float = 0.01, life_span:int = 10, 
-                dead = None, dead_collision = None) -> None:
+                dead = None, dead_collision = None,
+                coin:int = 0, exp:int = 0) -> None:
         self._id:str = id
         
         self.damage:int = damage
@@ -241,6 +278,10 @@ class BaseAtk:
         self.dead = dead
         self.dead_collision = dead_collision 
 
+        # If coin
+        self.coin:int = coin
+        self.exp:int = exp
+
         # Normalized velocity
         dx = self.pos_final[0] - self.pos[0]
         dy = self.pos_final[1] - self.pos[1]
@@ -250,6 +291,8 @@ class BaseAtk:
         self.vy = uy * self.speed
 
     def _reached_target(self) -> bool:
+        if self.speed == 0:
+            return False
         tx = self.pos_final[0] - self.pos[0]
         ty = self.pos_final[1] - self.pos[1]
         if (tx * tx + ty * ty) <= (self.speed * self.speed): # If the distance is small, consider that you have arrived
@@ -288,12 +331,20 @@ class BaseAtk:
 
             if _aabb_overlap(self.pos[0], self.pos[1], self.size,
                             ent.pos[0], ent.pos[1], ent.size):
+
+                # Coin and exp
+                if hasattr(ent, "coin"):
+                    ent.coin += self.coin
+                if hasattr(ent, "exp"):
+                    ent.exp += self.exp
+
                 # Aply damage
                 if hasattr(ent, "hp"):
                     ent.hp = max(0, float(ent.hp) - self.damage)
                     if ent.hp <= 0 and hasattr(ent, "die"):
-                        try: ent.die()
-                        except Exception: pass
+                        if ent.die != None:
+                            for func in ent.die:
+                                func(ent, colliders, actions, player)
 
                 self.alive = False
                 if self.dead_collision is not None:
@@ -338,6 +389,19 @@ def enemy_movement_simple(obj:[BaseEntity], colliders:list, main_pos:list[float]
 
 def enemy_movement_agro(obj:[BaseEntity], colliders:list, main_pos:list[float], actions:list, player:BaseEntity) -> "str":
     if random() > 1/(euclidean(obj.pos, player.pos)+1):
+        if abs(obj.pos[0] - player.pos[0]) > abs(obj.pos[1] - player.pos[1]):
+            if obj.pos[0] - player.pos[0] < -(.4 + obj.size):
+                return "d"
+            elif obj.pos[0] - player.pos[0] >= .4 + obj.size:
+                return "a"
+        else:
+            if obj.pos[1] - player.pos[1] < -(.4 + obj.size):
+                return "s"
+            elif obj.pos[1] - player.pos[1] >= .4 + obj.size:
+                return "w"
+
+def enemy_movement_away(obj:[BaseEntity], colliders:list, main_pos:list[float], actions:list, player:BaseEntity) -> "str":
+    if random() > 1/(euclidean(obj.pos, player.pos)+1) * 3:
         if abs(obj.pos[0] - player.pos[0]) > abs(obj.pos[1] - player.pos[1]):
             if obj.pos[0] - player.pos[0] < -(.4 + obj.size):
                 return "d"
@@ -427,6 +491,16 @@ def ability_create_barries(player:BaseEntity, target:list[float], colliders:list
 def ability_cure(player:BaseEntity, target:list[float], colliders:list = None):
     player.hp = min(int(player.hp + player.max_hp*.2), player.max_hp)
 
+#######################################################################################
+def drop_coin_and_exp(owner, colliders, actions, player) -> None:
+    drop_position:list = [owner.pos[0]+random()*owner.size*2-owner.size, owner.pos[1]*owner.size*2-owner.size]
+    actions.append(BaseAtk(damage = 0, speed = 0, 
+                            pos = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+(random()*owner.size*2-owner.size)*2],
+                            pos_final = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+random()*(owner.size*2-owner.size)*2],
+                            size = 0.1, life_span = 600, id = owner._id,
+                            coin = owner.coin, exp = owner.exp))
+
+
 weapons:dict[dict] = {}
 
 #######################################################################################
@@ -441,8 +515,9 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                  "e_time":30,
                                  "space_time":450,
                                  "size":0.25,
-                                 "enemy_movement":enemy_movement_simple,
-                                 "enemy_atk":enemy_atk_simple},
+                                 "enemy_movement":enemy_movement_away,
+                                 "enemy_atk":enemy_atk_simple,
+                                 "die":[drop_coin_and_exp]},
                          "archer":{"name":"Archer",
                                    "hp":120, # base
                                    "speed":0.04, # pixel per frame
@@ -454,8 +529,9 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "e_time":30,
                                    "space_time":1200,
                                    "size":0.3,
-                                   "enemy_movement":enemy_movement_simple,
-                                   "enemy_atk":enemy_atk_simple},
+                                   "enemy_movement":enemy_movement_away,
+                                   "enemy_atk":enemy_atk_simple,
+                                   "die":[drop_coin_and_exp]},
                          "slime":{"name":"Slime",
                                    "hp":30, # base
                                    "speed":0.04, # pixel per frame
@@ -468,7 +544,8 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "space_time":30,
                                    "size":0.3,
                                    "enemy_movement":enemy_movement_agro,
-                                   "enemy_atk":enemy_atk_agro},
+                                   "enemy_atk":enemy_atk_agro,
+                                   "die":[drop_coin_and_exp]},
                             "wolf":{"name":"Wolf",
                                    "hp":70, # base
                                    "speed":0.04, # pixel per frame
@@ -481,5 +558,6 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "space_time":1200,
                                    "size":0.4,
                                    "enemy_movement":enemy_movement_agro,
-                                   "enemy_atk":enemy_atk_agro},
+                                   "enemy_atk":enemy_atk_agro,
+                                   "die":[drop_coin_and_exp]},
                             }
