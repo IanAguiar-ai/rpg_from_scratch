@@ -16,7 +16,8 @@ A rpg from scratch.
     - Exp;
     - Drop in die;
     - Levels;
-    - Level system.
+    - Level system;
+    - Weapon system.
 
 # Weapons
 

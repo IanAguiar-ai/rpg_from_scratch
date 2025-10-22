@@ -513,6 +513,14 @@ def drop_coin_and_exp(owner, colliders, actions, player) -> None:
                             size = 0.1, life_span = 600, id = owner._id,
                             coin = owner.coin, exp = owner.exp))
 
+def drop_weapon(owner, colliders, actions, player) -> None:
+    drop_position:list = [owner.pos[0]+random()*owner.size*2-owner.size, owner.pos[1]*owner.size*2-owner.size]
+    actions.append(BaseAtk(damage = 0, speed = 0, 
+                            pos = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+(random()*owner.size*2-owner.size)*2],
+                            pos_final = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+random()*(owner.size*2-owner.size)*2],
+                            size = 0.1, life_span = 600, id = owner._id,
+                            coin = owner.coin, exp = owner.exp))
+
 #######################################################################################
 weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "chance_of_drop":1,
