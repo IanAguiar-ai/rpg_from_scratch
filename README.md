@@ -18,12 +18,5 @@ A rpg from scratch.
     - Levels;
     - Level system.
 
-# Projects
+# Weapons
 
-- Simple
-- Explosive
-
-# Abilities
-
-- Teletransport
-- Wall

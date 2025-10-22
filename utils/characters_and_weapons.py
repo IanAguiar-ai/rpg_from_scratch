@@ -8,7 +8,7 @@ W, H = 1600, 900
 
 #######################################################################################
 class BaseEntity:
-    def __init__(self, name:str, hp:float, speed:float, aceleration:float, size:float,
+    def __init__(self, name:str, hp:float, speed:float, aceleration:float, size:float, weapon,
                  q = None, e = None, space = None, q_time:int = 120, e_time:int = 30, space_time:int = 1200,
                  frame:str = None, pos:list[float] = [5, 5], colision:bool = False, 
                  player:bool = False, enemy:bool = False, enemy_movement = None, enemy_atk = None,
@@ -43,15 +43,19 @@ class BaseEntity:
         self.enemy_atk = enemy_atk
 
         # Actions
-        self.times:dict = {"q":q_time, "e":e_time, "space":space_time,
-                           "max_q":q_time, "max_e":e_time, "max_space":space_time}
-        self.functions:dict = {"q":q, "e":e, "space":space}
+        self.waapon = weapon
+        self.put_weapon()
         self.next_action:str = None
         self._lmb_prev:bool = False  # left botton mouse
         self.last_click_world:list = None
 
         # Frames
         self.frame:str = frame
+
+    def put_weapon(self) -> None:
+        self.times:dict = {key:self.weapon.times[key] for key in ["q", "e", "space", "max_q", "max_e", "max_space"]}
+        self.functions:dict = {key:self.weapon.functions[key] for key in ["q", "e", "space"]}
+        self.keyargs:dict = {key:self.weapon.keyargs[key] for key in ["q", "e", "space"]}
 
     def action(self, colliders:list, main_pos:list[float], actions:list, player) -> None:
         # Level
@@ -364,7 +368,16 @@ class BaseAtk:
         pygame.draw.rect(screen, (255, 230, 120), pygame.Rect(x, y, s, s))
 
 class BaseWeapon:
-    pass
+    def __init__(self, q, e, space, q_time, e_time, space_time, chance_of_drop:int = 0,
+                 keyargs_q = None, keyargs_e = None, keyargs_space = None, name = "NO NAME", level:int = 1) -> None:
+        self.name:str = name
+        self.level:int = level
+        self.chance_of_drop:float = chance_of_drop
+        self.times:dict = {"q":q_time, "e":e_time, "space":space_time,
+                           "max_q":q_time, "max_e":e_time, "max_space":space_time}
+        self.functions:dict = {"q":q, "e":e, "space":space}
+        self.keyargs:dict = {"q":keyargs_q, "e":keyargs_e, "space":keyargs_space}
+
 
 ######################################################################################
 def _aabb_overlap(ax:float, ay:float, asize:float, bx:float, by:float, bsize:float) -> bool:
@@ -501,16 +514,14 @@ def drop_coin_and_exp(owner, colliders, actions, player) -> None:
                             coin = owner.coin, exp = owner.exp))
 
 
-weapons:dict[dict] = {}
+weapons:dict[dict] = {"fire_staff", }
 
 #######################################################################################
 characters:dict[dict] = {"mage":{"name":"Mage",
                                  "hp":100, # base
                                  "speed":0.03, # pixel per frame
                                  "aceleration":0.005,
-                                 "q":projectile_with_fragmentation,
-                                 "e":projectile_simple,
-                                 "space":ability_create_barrier,#ability_transportation,
+                                 "waapon":weapons["fire_staff"],
                                  "q_time":120,
                                  "e_time":30,
                                  "space_time":450,
