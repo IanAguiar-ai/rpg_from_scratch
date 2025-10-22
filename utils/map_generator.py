@@ -77,6 +77,7 @@ enemy_temp["pos"] = [2, 4]
 enemy_temp["enemy"] = True
 enemy_temp["colision"] = True
 enemy_temp["exp"] = 60
+enemy_temp["coin"] = 10
 STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
 
 """

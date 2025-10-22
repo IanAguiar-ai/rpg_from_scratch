@@ -262,13 +262,17 @@ class BaseEntity:
         else:
             box = pygame.Rect(x, y - 10, int(self.hp), 4)
             pygame.draw.rect(screen, (180, 80, 80), box)
+            level = fonte.render(f"LV: {self.level}", True, (220, 190, 190))
+            screen.blit(level, (x, y - 20))
+
+
 
 
 #######################################################################################
 class BaseAtk:
     def __init__(self, damage:int, speed:float, pos:list[float], pos_final:list[float], id:str, poison:int = None, size:float = 0.01, life_span:int = 10, 
                 dead = None, dead_collision = None,
-                coin:int = 0, exp:int = 0) -> None:
+                coin:int = 0, exp:int = 0, weapon = None) -> None:
         self._id:str = id
         
         self.damage:int = damage
@@ -281,6 +285,7 @@ class BaseAtk:
         self.alive:bool = True
         self.dead = dead
         self.dead_collision = dead_collision 
+        self.weapon = weapon
 
         # If coin
         self.coin:int = coin
@@ -514,12 +519,13 @@ def drop_coin_and_exp(owner, colliders, actions, player) -> None:
                             coin = owner.coin, exp = owner.exp))
 
 def drop_weapon(owner, colliders, actions, player) -> None:
-    drop_position:list = [owner.pos[0]+random()*owner.size*2-owner.size, owner.pos[1]*owner.size*2-owner.size]
-    actions.append(BaseAtk(damage = 0, speed = 0, 
-                            pos = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+(random()*owner.size*2-owner.size)*2],
-                            pos_final = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+random()*(owner.size*2-owner.size)*2],
-                            size = 0.1, life_span = 600, id = owner._id,
-                            coin = owner.coin, exp = owner.exp))
+    if owner.weapon.chance_of_drop >= random():
+        drop_position:list = [owner.pos[0]+random()*owner.size*2-owner.size, owner.pos[1]*owner.size*2-owner.size]
+        actions.append(BaseAtk(damage = 0, speed = 0, 
+                                pos = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+(random()*owner.size*2-owner.size)*2],
+                                pos_final = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+random()*(owner.size*2-owner.size)*2],
+                                size = 0.15, life_span = 1200, id = owner._id,
+                                weapon = owner.weapon))
 
 #######################################################################################
 weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
@@ -545,7 +551,7 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                  "size":0.25,
                                  "enemy_movement":enemy_movement_away,
                                  "enemy_atk":enemy_atk_simple,
-                                 "die":[drop_coin_and_exp]},
+                                 "die":[drop_coin_and_exp, drop_weapon]},
                          "archer":{"name":"Archer",
                                    "hp":120, # base
                                    "speed":0.04, # pixel per frame
