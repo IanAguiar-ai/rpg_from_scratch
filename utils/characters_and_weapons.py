@@ -43,7 +43,7 @@ class BaseEntity:
         self.enemy_atk = enemy_atk
 
         # Actions
-        self.waapon = weapon
+        self.weapon = weapon
         self.put_weapon()
         self.next_action:str = None
         self._lmb_prev:bool = False  # left botton mouse
@@ -513,15 +513,24 @@ def drop_coin_and_exp(owner, colliders, actions, player) -> None:
                             size = 0.1, life_span = 600, id = owner._id,
                             coin = owner.coin, exp = owner.exp))
 
-
-weapons:dict[dict] = {"fire_staff", }
+#######################################################################################
+weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
+                                    "chance_of_drop":1,
+                                    "level":1,
+                                    "q_time":120,
+                                    "e_time":30,
+                                    "space_time":450,
+                                    "q":projectile_with_fragmentation,
+                                    "e":projectile_simple,
+                                    "space":ability_transportation},
+                     }
 
 #######################################################################################
 characters:dict[dict] = {"mage":{"name":"Mage",
                                  "hp":100, # base
                                  "speed":0.03, # pixel per frame
                                  "aceleration":0.005,
-                                 "waapon":weapons["fire_staff"],
+                                 "weapon":BaseWeapon(**weapons["fire_staff"].copy()),
                                  "q_time":120,
                                  "e_time":30,
                                  "space_time":450,
