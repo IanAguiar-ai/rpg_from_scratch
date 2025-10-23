@@ -3,7 +3,7 @@ import pygame
 
 # My:
 from utils.map_generator import STATIC_ENTITIES, StaticObject, close_entities
-from utils.characters_and_weapons import BaseEntity, weapons, characters, zoom_map, W, H
+from utils.characters_and_weapons import BaseEntity, BaseWeapon, weapons, characters, zoom_map, W, H
 from utils.functions import suavization
 
 
@@ -14,7 +14,8 @@ if __name__ == "__main__":
     player = BaseEntity(**characters["mage"])
     player.player = True
     player.colision = True
-    player.inventory = [1, *[None for i in range(23)]]
+    player.put_in_inventory(BaseWeapon(**weapons["fire_staff"].copy()))
+    player.put_in_inventory(BaseWeapon(**weapons["simple_bow"].copy()))
 
     main_pos:list = [0, 0]
     _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
@@ -75,4 +76,4 @@ if __name__ == "__main__":
             _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
             #print(f"{len(_TO_RENDER_) = } | {main_pos = }")
             #print(len(_ACTIONS_))
-            print(player.inventory)
+            #print(player.inventory)

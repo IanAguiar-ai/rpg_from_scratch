@@ -49,6 +49,7 @@ class BaseEntity:
 
         # Actions
         self.weapon = weapon
+        self.iten = None
         self.put_weapon()
         self.next_action:str = None
         self._lmb_prev:bool = False  # left botton mouse
@@ -56,8 +57,11 @@ class BaseEntity:
 
         # Frames
         self.frame:str = frame
+        self.last_position_mouse:tuple = (0, 0)
 
-    def put_weapon(self) -> None:
+    def put_weapon(self, weapon = None) -> None:
+        if weapon != None:
+            self.weapon = weapon
         self.times:dict = {key:self.weapon.times[key] for key in ["q", "e", "space", "max_q", "max_e", "max_space"]}
         self.functions:dict = {key:self.weapon.functions[key] for key in ["q", "e", "space"]}
         self.keyargs:dict = {key:self.weapon.keyargs[key] for key in ["q", "e", "space"]}
@@ -192,16 +196,35 @@ class BaseEntity:
                 self.next_action:str = "space"
 
             # Mouse
-            if (self.next_action != None) and (self.times[self.next_action] == self.times[f"max_{self.next_action}"]):
+            if self._in_invetory:
                 buttons = pygame.mouse.get_pressed(3)        # (L, M, R)
                 lmb = bool(buttons[0])
-                if lmb and (not self._lmb_prev):
-                    sx, sy = pygame.mouse.get_pos()
-                    if self._in_invetory:
-                        # Ver qual das caixas em self._positions_box está mais perto
-                        # Botão esquerdo escolhe weapon
-                        pass
-                    else:
+                sx, sy = pygame.mouse.get_pos()
+
+                if self.last_position_mouse != (sx, sy) or sum(buttons) > 0:
+                    self.last_position_mouse:tuple = (sx, sy)
+
+                    n:int = 0
+                    select_n:int = None
+                    while n < len(self.inventory):
+                        #print(f"{n}: {euclidean(self._positions_box[n], [sx, sy]):0.02f}")
+                        if euclidean(self._positions_box[n], [sx, sy]) < 100:
+                            select_n:int = n
+                            break
+                        n += 1
+                    #print(f"{select_n} selected")
+                    #print(buttons)
+                    if (bool(buttons[0]) == True) and (select_n != None):
+                        if self.inventory[n] != None:
+                            self.put_weapon(weapon = self.inventory[n])
+
+            else:
+                if (self.next_action != None) and (self.times[self.next_action] == self.times[f"max_{self.next_action}"]):
+                    buttons = pygame.mouse.get_pressed(3)        # (L, M, R)
+                    lmb = bool(buttons[0])
+                    if lmb and (not self._lmb_prev):
+                        sx, sy = pygame.mouse.get_pos()
+                    
                         wx = main_pos[0] + sx/zoom_map
                         wy = main_pos[1] + sy/zoom_map
                         self.last_click_world = (wx, wy)
@@ -216,8 +239,8 @@ class BaseEntity:
                             if temp_actions[0] != None:
                                 actions.extend(temp_actions)
                         #self.next_action:str = None
+                    self._lmb_prev = lmb
 
-                self._lmb_prev = lmb
         elif self.enemy:
              # Actions
             self.next_action, mouse_pos = self.enemy_atk(self, colliders, main_pos, actions, player)
@@ -279,12 +302,24 @@ class BaseEntity:
             screen.blit(level, (W - 160, 32))
 
             if self._in_invetory:
+                fonte = pygame.font.SysFont(None, 32)
+                small_fonte = pygame.font.SysFont(None, 20)
                 for index, pos in enumerate(self._positions_box):
+
                     box = pygame.Rect(*pos, 70, 70)
                     if self.inventory[index] != None:
                         pygame.draw.rect(screen, (110, 110, 110), box)
+                        text = small_fonte.render(f"{self.inventory[index].name}", True, (220, 220, 220))
+                        screen.blit(text, pos)
                     else:
-                        pygame.draw.rect(screen, (160, 160, 160), box)                            
+                        pygame.draw.rect(screen, (160, 160, 160), box)   
+
+
+                    weapon = fonte.render(f"Weapon: {self.weapon.name}", True, (160, 160, 230))
+                    screen.blit(weapon, (W/12*2, H/12))
+
+                    weapon = fonte.render(f"Iten: {self.iten}", True, (160, 160, 230))
+                    screen.blit(weapon, (W/12*2, H/12*2))
 
 
         else:
@@ -501,7 +536,7 @@ def projectile_sword(owner, target, _id, damage:int = 40, speed:float = 0.04, si
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def projectile_large_sword(owner, target, _id, damage:int = 20, speed:float = 0.04, size = 0.1, life_span = 25, player = None):
+def projectile_large_sword(owner, target, _id, damage:int = 25, speed:float = 0.04, size = 0.1, life_span = 25, player = None):
     """Sword"""
     return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
@@ -557,7 +592,7 @@ def drop_weapon(owner, colliders, actions, player) -> None:
 
 #######################################################################################
 weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
-                                    "chance_of_drop":1,
+                                    "chance_of_drop":.1,
                                     "level":1,
                                     "q_time":120,
                                     "e_time":30,
@@ -565,6 +600,24 @@ weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "q":projectile_with_fragmentation,
                                     "e":projectile_simple,
                                     "space":ability_transportation},
+                      "simple_bow":{"name":"Simple Bow",
+                                    "chance_of_drop":1,
+                                    "level":1,
+                                    "q_time":120,
+                                    "e_time":25,
+                                    "space_time":450,
+                                    "q":None,
+                                    "e":projectile_arrow,
+                                    "space":None},
+                      "claw":{"name":"Claw",
+                                    "chance_of_drop":0,
+                                    "level":1,
+                                    "q_time":35,
+                                    "e_time":25,
+                                    "space_time":450,
+                                    "q":projectile_sword,
+                                    "e":projectile_large_sword,
+                                    "space":None}
                      }
 
 #######################################################################################
@@ -573,9 +626,6 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                  "speed":0.03, # pixel per frame
                                  "aceleration":0.005,
                                  "weapon":BaseWeapon(**weapons["fire_staff"].copy()),
-                                 "q_time":120,
-                                 "e_time":30,
-                                 "space_time":450,
                                  "size":0.25,
                                  "enemy_movement":enemy_movement_away,
                                  "enemy_atk":enemy_atk_simple,
@@ -584,42 +634,27 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "hp":120, # base
                                    "speed":0.04, # pixel per frame
                                    "aceleration":0.01,
-                                   "q":projectile_around,
-                                   "e":projectile_arrow,
-                                   "space":ability_create_barries,
-                                   "q_time":150,
-                                   "e_time":30,
-                                   "space_time":1200,
+                                   "weapon":BaseWeapon(**weapons["simple_bow"].copy()),
                                    "size":0.3,
                                    "enemy_movement":enemy_movement_away,
                                    "enemy_atk":enemy_atk_simple,
-                                   "die":[drop_coin_and_exp]},
+                                   "die":[drop_coin_and_exp, drop_weapon]},
                          "slime":{"name":"Slime",
                                    "hp":30, # base
                                    "speed":0.04, # pixel per frame
                                    "aceleration":0.003,
-                                   "q":projectile_large_sword,
-                                   "e":projectile_large_sword,
-                                   "space":None,
-                                   "q_time":30,
-                                   "e_time":30,
-                                   "space_time":30,
+                                   "weapon":BaseWeapon(**weapons["claw"].copy()),
                                    "size":0.3,
                                    "enemy_movement":enemy_movement_agro,
                                    "enemy_atk":enemy_atk_agro,
-                                   "die":[drop_coin_and_exp]},
+                                   "die":[drop_coin_and_exp, drop_weapon]},
                             "wolf":{"name":"Wolf",
                                    "hp":70, # base
                                    "speed":0.04, # pixel per frame
                                    "aceleration":0.007,
-                                   "q":projectile_large_sword,
-                                   "e":projectile_large_sword,
-                                   "space":None,
-                                   "q_time":45,
-                                   "e_time":45,
-                                   "space_time":1200,
+                                   "weapon":BaseWeapon(**weapons["claw"].copy()),
                                    "size":0.4,
                                    "enemy_movement":enemy_movement_agro,
                                    "enemy_atk":enemy_atk_agro,
-                                   "die":[drop_coin_and_exp]},
+                                   "die":[drop_coin_and_exp, drop_weapon]},
                             }

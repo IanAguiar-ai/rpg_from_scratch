@@ -55,7 +55,6 @@ STATIC_ENTITIES.append(StaticObject(x = 8, y = 8))
 #    enemy_temp["enemy"] = True
 #    enemy_temp["colision"] = True
 #    STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
-"""
 enemy_temp:dict = characters["slime"].copy()
 enemy_temp["pos"] = [3, 3]
 enemy_temp["enemy"] = True
@@ -70,7 +69,6 @@ enemy_temp["enemy"] = True
 enemy_temp["colision"] = True
 enemy_temp["exp"] = 60
 STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
-"""
 
 enemy_temp:dict = characters["mage"].copy()
 enemy_temp["pos"] = [2, 4]
@@ -80,11 +78,9 @@ enemy_temp["exp"] = 60
 enemy_temp["coin"] = 10
 STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
 
-"""
 enemy_temp:dict = characters["archer"].copy()
 enemy_temp["pos"] = [2, 4]
 enemy_temp["enemy"] = True
 enemy_temp["colision"] = True
 enemy_temp["exp"] = 60
 STATIC_ENTITIES.append(BaseEntity(**enemy_temp))
-"""

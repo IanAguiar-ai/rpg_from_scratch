@@ -22,9 +22,10 @@ A rpg from scratch.
 # Weapons
 
 - 0.0.1:
-    - Fire Staff.
+    - Fire Staff;
+    - Simple Bow;
+    - Claw.
 
 # To make
 
-System of inventory, list of inventory len() = 24, change weapon;
-System of armor (cure, speed, armor, hp, size)
+System of iten (cure, speed, armor, hp, size).
