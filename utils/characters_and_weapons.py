@@ -15,6 +15,11 @@ class BaseEntity:
                  level:int = 0, exp:int = 0, coin:int = 0,
                  die = None) -> None:
         self._id:str = f"{randint(0, 999_999_999):09}"
+        self._space_inventory:tuple[int] = (6, 4)
+        self.inventory:list = [None for i in range(self._space_inventory[0] * self._space_inventory[1])]
+        self._in_invetory:bool = False
+        self._time_in_inventory:int = 0
+        self._positions_box:list[tuple] = [(int(W/20 + W/(self._space_inventory[0]) * i), int(H/3 + H/(self._space_inventory[1] + 2) * j)) for i in range(self._space_inventory[0]) for j in range(self._space_inventory[1])]
 
         # Atributes
         self.name:str = name
@@ -57,6 +62,11 @@ class BaseEntity:
         self.functions:dict = {key:self.weapon.functions[key] for key in ["q", "e", "space"]}
         self.keyargs:dict = {key:self.weapon.keyargs[key] for key in ["q", "e", "space"]}
 
+    def put_in_inventory(self, obj) -> None:
+        if None in self.inventory:
+            self.inventory.remove(None)
+            self.inventory.append(obj)
+
     def action(self, colliders:list, main_pos:list[float], actions:list, player) -> None:
         # Level
         if self.exp > self.next_level:
@@ -76,6 +86,8 @@ class BaseEntity:
         self.pos_aceleration[1] *= 0.9
 
         if (self.player) or (self.enemy):
+            self._time_in_inventory = (self._time_in_inventory + 1)%30_000
+
             if self.player:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_a]:
@@ -86,6 +98,9 @@ class BaseEntity:
                     self.pos_aceleration[1] -= self.aceleration
                 if keys[pygame.K_s]:
                     self.pos_aceleration[1] += self.aceleration
+                if keys[pygame.K_i] and self._time_in_inventory > 20:
+                    self._in_invetory = (self._in_invetory + 1) % 2
+                    self._time_in_inventory:int = 0
 
             elif self.enemy:
                 key_enemy:str = self.enemy_movement(self, colliders, main_pos, actions, player)
@@ -182,20 +197,25 @@ class BaseEntity:
                 lmb = bool(buttons[0])
                 if lmb and (not self._lmb_prev):
                     sx, sy = pygame.mouse.get_pos()
-                    wx = main_pos[0] + sx/zoom_map
-                    wy = main_pos[1] + sy/zoom_map
-                    self.last_click_world = (wx, wy)
-                    self.times[self.next_action] = 0
-                    if self.functions[self.next_action] != None:
-                        if self.next_action == "space": # Ability
-                            temp_actions = self.functions[self.next_action](player = self, target = (wx, wy), colliders = colliders)
-                        else: # Atack
-                            temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy), _id = self._id)
-                        if type(temp_actions) != list:
-                            temp_actions:list = [temp_actions]
-                        if temp_actions[0] != None:
-                            actions.extend(temp_actions)
-                    #self.next_action:str = None
+                    if self._in_invetory:
+                        # Ver qual das caixas em self._positions_box está mais perto
+                        # Botão esquerdo escolhe weapon
+                        pass
+                    else:
+                        wx = main_pos[0] + sx/zoom_map
+                        wy = main_pos[1] + sy/zoom_map
+                        self.last_click_world = (wx, wy)
+                        self.times[self.next_action] = 0
+                        if self.functions[self.next_action] != None:
+                            if self.next_action == "space": # Ability
+                                temp_actions = self.functions[self.next_action](player = self, target = (wx, wy), colliders = colliders)
+                            else: # Atack
+                                temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy), _id = self._id)
+                            if type(temp_actions) != list:
+                                temp_actions:list = [temp_actions]
+                            if temp_actions[0] != None:
+                                actions.extend(temp_actions)
+                        #self.next_action:str = None
 
                 self._lmb_prev = lmb
         elif self.enemy:
@@ -258,14 +278,20 @@ class BaseEntity:
             level = fonte.render(f"Level: {self.level}", True, (255, 255, 255))
             screen.blit(level, (W - 160, 32))
 
+            if self._in_invetory:
+                for index, pos in enumerate(self._positions_box):
+                    box = pygame.Rect(*pos, 70, 70)
+                    if self.inventory[index] != None:
+                        pygame.draw.rect(screen, (110, 110, 110), box)
+                    else:
+                        pygame.draw.rect(screen, (160, 160, 160), box)                            
+
 
         else:
             box = pygame.Rect(x, y - 10, int(self.hp), 4)
             pygame.draw.rect(screen, (180, 80, 80), box)
             level = fonte.render(f"LV: {self.level}", True, (220, 190, 190))
             screen.blit(level, (x, y - 20))
-
-
 
 
 #######################################################################################
@@ -346,6 +372,8 @@ class BaseAtk:
                     ent.coin += self.coin
                 if hasattr(ent, "exp"):
                     ent.exp += self.exp
+                if hasattr(ent, "weapon") and self.weapon != None:
+                    ent.put_in_inventory(self.weapon)
 
                 # Aply damage
                 if hasattr(ent, "hp"):

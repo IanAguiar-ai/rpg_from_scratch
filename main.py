@@ -14,6 +14,7 @@ if __name__ == "__main__":
     player = BaseEntity(**characters["mage"])
     player.player = True
     player.colision = True
+    player.inventory = [1, *[None for i in range(23)]]
 
     main_pos:list = [0, 0]
     _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
@@ -50,14 +51,15 @@ if __name__ == "__main__":
                 act.action(temporary_TO_RENDER_, main_pos, _ACTIONS_, player)
         _TO_RENDER_ = [a for a in _TO_RENDER_ if getattr(a, "alive", True)]
 
-        # Others:
-        for act in _ACTIONS_:
-            act.action(_TO_RENDER_, _ACTIONS_, player)
-            act.plot(screen, main_pos)
-        _ACTIONS_ = [a for a in _ACTIONS_ if getattr(a, "alive", True)] # Remove not actions have end
+        if not player._in_invetory:
+            # Others:
+            for act in _ACTIONS_:
+                act.action(_TO_RENDER_, _ACTIONS_, player)
+                act.plot(screen, main_pos)
+            _ACTIONS_ = [a for a in _ACTIONS_ if getattr(a, "alive", True)] # Remove not actions have end
 
-        for ent in _TO_RENDER_:
-            ent.plot(screen, main_pos)
+            for ent in _TO_RENDER_:
+                ent.plot(screen, main_pos)
 
         pygame.display.flip()
         clock.tick(30)
@@ -73,4 +75,4 @@ if __name__ == "__main__":
             _TO_RENDER_:list[StaticObject] = close_entities(STATIC_ENTITIES, main_pos)
             #print(f"{len(_TO_RENDER_) = } | {main_pos = }")
             #print(len(_ACTIONS_))
-
+            print(player.inventory)
