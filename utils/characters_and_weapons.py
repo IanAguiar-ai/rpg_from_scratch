@@ -117,74 +117,74 @@ class BaseEntity:
                 if key_enemy == "s":
                     self.pos_aceleration[1] += self.aceleration
 
+        if not self._in_invetory:
+            self.pos_aceleration[0] = max(-self.speed, min(self.speed, self.pos_aceleration[0]))
+            self.pos_aceleration[1] = max(-self.speed, min(self.speed, self.pos_aceleration[1]))
 
-        self.pos_aceleration[0] = max(-self.speed, min(self.speed, self.pos_aceleration[0]))
-        self.pos_aceleration[1] = max(-self.speed, min(self.speed, self.pos_aceleration[1]))
-
-        new_x = self.pos[0] + self.pos_aceleration[0]
-        new_y = self.pos[1]
-        collided_x = False
-        for ent in colliders:
-            if getattr(ent, "colision", False):
-                if _aabb_overlap(new_x, new_y, self.size, ent.pos[0], ent.pos[1], ent.size):
-                    collided_x = True
-                    break
-        if not collided_x:
-            self.pos[0] = new_x
-        else:
-            self.pos_aceleration[0] = 0.0
-
-        new_x = self.pos[0]
-        new_y = self.pos[1] + self.pos_aceleration[1]
-        collided_y = False
-        for ent in colliders:
-            if getattr(ent, "colision", False):
-                if _aabb_overlap(new_x, new_y, self.size, ent.pos[0], ent.pos[1], ent.size):
-                    collided_y = True
-                    break
-        if not collided_y:
-            self.pos[1] = new_y
-        else:
-            self.pos_aceleration[1] = 0.0
-
-        # Inside a object
-        for _ in range(1):  # Iterations to push
-            pushed = False
+            new_x = self.pos[0] + self.pos_aceleration[0]
+            new_y = self.pos[1]
+            collided_x = False
             for ent in colliders:
-                if not getattr(ent, "colision", False):
-                    continue
+                if getattr(ent, "colision", False):
+                    if _aabb_overlap(new_x, new_y, self.size, ent.pos[0], ent.pos[1], ent.size):
+                        collided_x = True
+                        break
+            if not collided_x:
+                self.pos[0] = new_x
+            else:
+                self.pos_aceleration[0] = 0.0
 
-                # testa overlap atual
-                if _aabb_overlap(self.pos[0], self.pos[1], self.size,
-                                ent.pos[0], ent.pos[1], ent.size):
-                    # centros
-                    acx = self.pos[0] + self.size * 0.5
-                    acy = self.pos[1] + self.size * 0.5
-                    bcx = ent.pos[0] + ent.size * 0.5
-                    bcy = ent.pos[1] + ent.size * 0.5
+            new_x = self.pos[0]
+            new_y = self.pos[1] + self.pos_aceleration[1]
+            collided_y = False
+            for ent in colliders:
+                if getattr(ent, "colision", False):
+                    if _aabb_overlap(new_x, new_y, self.size, ent.pos[0], ent.pos[1], ent.size):
+                        collided_y = True
+                        break
+            if not collided_y:
+                self.pos[1] = new_y
+            else:
+                self.pos_aceleration[1] = 0.0
 
-                    # diferencas de centro
-                    dx = acx - bcx
-                    dy = acy - bcy
+            # Inside a object
+            for _ in range(1):  # Iterations to push
+                pushed = False
+                for ent in colliders:
+                    if not getattr(ent, "colision", False):
+                        continue
 
-                    # quanto esta "enfiado" em cada eixo
-                    overlap_x = (self.size * 0.5 + ent.size * 0.5) - abs(dx)
-                    overlap_y = (self.size * 0.5 + ent.size * 0.5) - abs(dy)
+                    # testa overlap atual
+                    if _aabb_overlap(self.pos[0], self.pos[1], self.size,
+                                    ent.pos[0], ent.pos[1], ent.size):
+                        # centros
+                        acx = self.pos[0] + self.size * 0.5
+                        acy = self.pos[1] + self.size * 0.5
+                        bcx = ent.pos[0] + ent.size * 0.5
+                        bcy = ent.pos[1] + ent.size * 0.5
 
-                    if overlap_x > 0 and overlap_y > 0:
-                        if overlap_x < overlap_y:
-                            # empurra no eixo X, para fora do centro do collider
-                            shift = overlap_x if dx > 0 else -overlap_x
-                            self.pos[0] += shift
-                            self.pos_aceleration[0] = 0.0
-                        else:
-                            # empurra no eixo Y
-                            shift = overlap_y if dy > 0 else -overlap_y
-                            self.pos[1] += shift
-                            self.pos_aceleration[1] = 0.0
-                        pushed = True
-            if not pushed:
-                break
+                        # diferencas de centro
+                        dx = acx - bcx
+                        dy = acy - bcy
+
+                        # quanto esta "enfiado" em cada eixo
+                        overlap_x = (self.size * 0.5 + ent.size * 0.5) - abs(dx)
+                        overlap_y = (self.size * 0.5 + ent.size * 0.5) - abs(dy)
+
+                        if overlap_x > 0 and overlap_y > 0:
+                            if overlap_x < overlap_y:
+                                # empurra no eixo X, para fora do centro do collider
+                                shift = overlap_x if dx > 0 else -overlap_x
+                                self.pos[0] += shift
+                                self.pos_aceleration[0] = 0.0
+                            else:
+                                # empurra no eixo Y
+                                shift = overlap_y if dy > 0 else -overlap_y
+                                self.pos[1] += shift
+                                self.pos_aceleration[1] = 0.0
+                            pushed = True
+                if not pushed:
+                    break
 
         if self.player:
             # Actions
@@ -284,7 +284,7 @@ class BaseEntity:
 
             # keys
             for index, key in enumerate(["q", "e", "space"]):
-                box = pygame.Rect(self.max_hp + 20, 10 + index*7, int(self.times[key]/self.times[f"max_{key}"]*50), 6)
+                box = pygame.Rect(120, 10 + index*7, int(self.times[key]/self.times[f"max_{key}"]*50), 6)
                 pygame.draw.rect(screen, (200, 200, 150) if key == self.next_action else (150, 200, 100), box)
 
             # Coin, exp and level

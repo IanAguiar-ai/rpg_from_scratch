@@ -12,6 +12,7 @@ from utils.functions import suavization
 ###############################################################################
 if __name__ == "__main__":
     player = BaseEntity(**characters["mage"])
+    player.exp = 1000
     player.player = True
     player.colision = True
     player.put_in_inventory(BaseWeapon(**weapons["fire_staff"].copy()))
