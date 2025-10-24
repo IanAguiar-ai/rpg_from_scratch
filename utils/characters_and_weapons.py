@@ -62,7 +62,7 @@ class BaseEntity:
     def put_weapon(self, weapon = None) -> None:
         if weapon != None:
             self.weapon = weapon
-        self.times:dict = {key:self.weapon.times[key] for key in ["q", "e", "space", "max_q", "max_e", "max_space"]}
+        self.times:dict = {key:self.weapon.times[key] if key not in ["q", "e", "space"] else 0 for key in ["q", "e", "space", "max_q", "max_e", "max_space"]}
         self.functions:dict = {key:self.weapon.functions[key] for key in ["q", "e", "space"]}
         self.keyargs:dict = {key:self.weapon.keyargs[key] for key in ["q", "e", "space"]}
 
@@ -233,7 +233,7 @@ class BaseEntity:
                             if self.next_action == "space": # Ability
                                 temp_actions = self.functions[self.next_action](player = self, target = (wx, wy), colliders = colliders)
                             else: # Atack
-                                temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy), _id = self._id)
+                                temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy), _id = self._id, player = self, level = self.weapon.level)
                             if type(temp_actions) != list:
                                 temp_actions:list = [temp_actions]
                             if temp_actions[0] != None:
@@ -255,7 +255,7 @@ class BaseEntity:
                     if self.next_action == "space": # Ability
                         temp_actions = self.functions[self.next_action](player = self, target = (wx, wy), colliders = colliders)
                     else: # Atack
-                        temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy), _id = self._id)
+                        temp_actions = self.functions[self.next_action](owner = self.pos, target = (wx, wy), _id = self._id, player = self, level = self.weapon.level)
                     if type(temp_actions) != list:
                         temp_actions:list = [temp_actions]
                     if temp_actions[0] != None:
@@ -278,9 +278,9 @@ class BaseEntity:
             # Hp
             box = pygame.Rect(10, 10, int(self.hp/self.max_hp * 100), 20)
             pygame.draw.rect(screen, (255, 100, 100), box)
-            fonte = pygame.font.SysFont(None, 30)
+            fonte = pygame.font.SysFont(None, 26)
             text = fonte.render(f"{int(self.hp)}/{self.max_hp}", True, (255, 255, 255))
-            screen.blit(text, (20, 10))
+            screen.blit(text, (10, 10))
 
             # keys
             for index, key in enumerate(["q", "e", "space"]):
@@ -288,10 +288,10 @@ class BaseEntity:
                 pygame.draw.rect(screen, (200, 200, 150) if key == self.next_action else (150, 200, 100), box)
 
             # Coin, exp and level
-            fonte = pygame.font.SysFont(None, 22)
+            fonte = pygame.font.SysFont(None, 20)
             coin = fonte.render(f"Coin: {self.coin}", True, (240, 215, 90))
             exp = fonte.render(f"Exp: {self.exp}/{self.next_level}", True, (180, 180, 255))
-            screen.blit(coin, (W - 100, 10))
+            screen.blit(coin, (W - 210, 60))
             screen.blit(exp, (W - 210, 10))
 
             box = pygame.Rect(W - 220, 30, 210, 20)
@@ -333,8 +333,10 @@ class BaseEntity:
 class BaseAtk:
     def __init__(self, damage:int, speed:float, pos:list[float], pos_final:list[float], id:str, poison:int = None, size:float = 0.01, life_span:int = 10, 
                 dead = None, dead_collision = None,
-                coin:int = 0, exp:int = 0, weapon = None) -> None:
+                coin:int = 0, exp:int = 0, weapon = None,
+                level:int = 0) -> None:
         self._id:str = id
+        self.level:int = level
         
         self.damage:int = damage
         self.speed:float = speed
@@ -373,7 +375,7 @@ class BaseAtk:
         colliders = [*colliders, player]
         if not self.alive:
             if self.dead != None:
-                temp_action = self.dead(self.pos, self.pos)
+                temp_action = self.dead(self.pos, self.pos, _id = self._id, player = self, level = self.level)
                 if type(temp_action) != list:
                     temp_action:list = [temp_action]
                 actions.extend(temp_action)
@@ -386,7 +388,7 @@ class BaseAtk:
         if self.life_span <= 0 or (self._reached_target()):
             self.alive = False
             if self.dead != None:
-                temp_action = self.dead(self.pos, self.pos, _id = self._id)
+                temp_action = self.dead(self.pos, self.pos, _id = self._id, player = self, level = self.level)
                 if type(temp_action) != list:
                     temp_action:list = [temp_action]
                 actions.extend(temp_action)
@@ -420,7 +422,7 @@ class BaseAtk:
 
                 self.alive = False
                 if self.dead_collision is not None:
-                    temp_action = self.dead_collision(self.pos, self.pos)
+                    temp_action = self.dead_collision(self.pos, self.pos, _id = self._id, player = self, level = self.level)
                     if type(temp_action) != list:
                         temp_action = [temp_action]
                     actions.extend(temp_action)
@@ -497,7 +499,13 @@ def enemy_movement_away(obj:[BaseEntity], colliders:list, main_pos:list[float], 
 ######################################################################################
 def enemy_atk_simple(obj:[BaseEntity], colliders:list, main_pos:list[float], actions:list, player:BaseEntity) -> ("str", list[float]):
     if random() > 0.97:
-        return ["q", "e", "space"][randint(0, 2)], [player.pos[0], player.pos[1]]
+        return ["q", "e", "space"][randint(0, 2)], [player.pos[0] + (random()-0.5)/5, player.pos[1] + (random()-0.5)/5]
+    else:
+        return None, None
+
+def enemy_atk_precision(obj:[BaseEntity], colliders:list, main_pos:list[float], actions:list, player:BaseEntity) -> ("str", list[float]):
+    if random() > 0.97:
+        return ["q", "e", "space"][randint(0, 2)], [player.pos[0] + player.pos_aceleration[0]*2 + random(), player.pos[1] + player.pos_aceleration[1]*2 + random()]
     else:
         return None, None
 
@@ -508,54 +516,62 @@ def enemy_atk_agro(obj:[BaseEntity], colliders:list, main_pos:list[float], actio
         return None, None
 
 #######################################################################################
-def projectile_simple(owner, target, _id, damage:int = 20, speed:float = 0.25, size = 0.03, life_span = 25, player = None):
+def projectile_simple(owner, target, _id, damage:int = 20, speed:float = 0.25, size = 0.03, life_span = 25, player = None, level = 0):
     """More simple projectile"""
     target = [(target[0] - owner[0])/speed * life_span, (target[1] - owner[1])/speed * life_span]
-    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def fragmentation(owner, target, _id, damage:int = 25, speed:float = 0.07, size = 0.04, life_span = 20, player = None):
-    return [BaseAtk(damage = damage, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
+def fragmentation(owner, target, _id, damage:int = 25, speed:float = 0.07, size = 0.04, life_span = 20, player = None, level = 0):
+    return [BaseAtk(damage = damage * 1.1**level, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
                     size = size, life_span = life_span, id = _id) for x, y in ((-3, -3), (-3, 3), (3, -3), (3, 3), (3, 0), (0, 3), (-3, 0), (0, -3))]
 
-def projectile_with_fragmentation(owner, target, _id, damage:int = 50, speed:float = 0.15, size = 0.06, life_span = 40, player = None):
-    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
-                   size = size, life_span = life_span, dead = fragmentation, dead_collision = None, id = _id)
+def random_fragmentation(owner, target, _id, damage:int = 10, speed:float = 0.07, size = 0.04, life_span = 25, player = None, level = 0):
+    return [BaseAtk(damage = damage * 1.1**level, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
+                    size = size, life_span = life_span, id = _id) for x, y in [[(random()-.5)*10, (random()-.5)*10] for _ in range(randint(3, 12))]]
 
-def projectile_arrow(owner, target, _id, damage:int = 20, speed:float = 0.4, size = 0.03, life_span = 25, player = None):
+def projectile_with_fragmentation(owner, target, _id, damage:int = 50, speed:float = 0.15, size = 0.06, life_span = 40, player = None, level = 0):
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
+                   size = size, life_span = life_span, dead = fragmentation, dead_collision = None, id = _id, level = player.weapon.level)
+
+def projectile_with__random_fragmentation(owner, target, _id, damage:int = 50, speed:float = 0.15, size = 0.06, life_span = 40, player = None, level = 0):
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
+                   size = size, life_span = life_span, dead = random_fragmentation, dead_collision = None, id = _id, level = player.weapon.level)
+
+def projectile_arrow(owner, target, _id, damage:int = 20, speed:float = 0.4, size = 0.03, life_span = 25, player = None, level = 0):
     target = [(target[0] - owner[0])/speed * life_span, (target[1] - owner[1])/speed * life_span]
-    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def projectile_around(owner, target, _id, damage:int = 30, speed:float = 0.04, size = 0.04, life_span = 40, player = None):
-    return [BaseAtk(damage = damage, speed = speed, pos = [target[0] + x, target[1] + y], pos_final = [target[0], target[1]],
+def projectile_around(owner, target, _id, damage:int = 30, speed:float = 0.04, size = 0.04, life_span = 40, player = None, level = 0):
+    return [BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = [target[0] + x, target[1] + y], pos_final = [target[0], target[1]],
                     size = size, life_span = life_span, id = _id) for x, y in ((-1, -1), (-1, 1), (1, -1), (1, 1))]
 
-def projectile_sword(owner, target, _id, damage:int = 40, speed:float = 0.04, size = 0.1, life_span = 15, player = None):
+def projectile_sword(owner, target, _id, damage:int = 40, speed:float = 0.04, size = 0.1, life_span = 15, player = None, level = 0):
     """Sword"""
-    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def projectile_large_sword(owner, target, _id, damage:int = 25, speed:float = 0.04, size = 0.1, life_span = 25, player = None):
+def projectile_large_sword(owner, target, _id, damage:int = 25, speed:float = 0.04, size = 0.1, life_span = 25, player = None, level = 0):
     """Sword"""
-    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, id = _id)
 
-def chance_fragmentation(owner, target, _id, damage:int = 15, speed:float = 0.06, size = 0.04, life_span = 15, player = None):
+def chance_fragmentation(owner, target, _id, damage:int = 20, speed:float = 0.06, size = 0.04, life_span = 15, player = None, level = 0):
     times:int = randint(0, 2) if random() > 0.1 else 0
     if times > 0:
         temp_atk:list = []
         for i in range(times):
-            temp_atk.append(BaseAtk(damage = damage, speed = speed, pos = [owner[0], owner[1]],
+            temp_atk.append(BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = [owner[0], owner[1]],
                                     pos_final = [target[0] + (random()-0.5)*6, target[1] + (random()-0.5)*6],
                                     size = size, life_span = life_span, id = _id, dead = chance_fragmentation))
         return temp_atk
     else:
-        return [BaseAtk(damage = damage, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
+        return [BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = [owner[0]+x/20, owner[1]+y/20], pos_final = [target[0] + x, target[1] + y],
                             size = size, life_span = life_span, id = _id) for x, y in [[(random()-0.5)*6, (random()-0.5)*6]]]
 
-def projectile_chance_fragmentation(owner, target, _id, damage:int = 30, speed:float = 0.15, size = 0.07, life_span = 30, player = None):
-    return BaseAtk(damage = damage, speed = speed, pos = owner, pos_final = target,
+def projectile_chance_fragmentation(owner, target, _id, damage:int = 25, speed:float = 0.15, size = 0.07, life_span = 30, player = None, level = 0):
+    return BaseAtk(damage = damage * 1.1 ** level, speed = speed, pos = owner, pos_final = target,
                    size = size, life_span = life_span, dead = chance_fragmentation, dead_collision = None, id = _id)
 
 
@@ -593,7 +609,7 @@ def drop_weapon(owner, colliders, actions, player) -> None:
 #######################################################################################
 weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "chance_of_drop":.1,
-                                    "level":1,
+                                    "level":0,
                                     "q_time":120,
                                     "e_time":30,
                                     "space_time":450,
@@ -602,7 +618,7 @@ weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "space":ability_transportation},
                       "simple_bow":{"name":"Simple Bow",
                                     "chance_of_drop":1,
-                                    "level":1,
+                                    "level":0,
                                     "q_time":120,
                                     "e_time":25,
                                     "space_time":450,
@@ -611,13 +627,22 @@ weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "space":None},
                       "claw":{"name":"Claw",
                                     "chance_of_drop":0,
-                                    "level":1,
+                                    "level":0,
                                     "q_time":35,
                                     "e_time":25,
                                     "space_time":450,
                                     "q":projectile_sword,
                                     "e":projectile_large_sword,
-                                    "space":None}
+                                    "space":None},
+                       "random_staff":{"name":"Random Staff",
+                                    "chance_of_drop":.05,
+                                    "level":30,
+                                    "q_time":60,
+                                    "e_time":60,
+                                    "space_time":450,
+                                    "q":projectile_chance_fragmentation,
+                                    "e":projectile_with__random_fragmentation,
+                                    "space":None},
                      }
 
 #######################################################################################
@@ -637,7 +662,7 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "weapon":BaseWeapon(**weapons["simple_bow"].copy()),
                                    "size":0.3,
                                    "enemy_movement":enemy_movement_away,
-                                   "enemy_atk":enemy_atk_simple,
+                                   "enemy_atk":enemy_atk_precision,
                                    "die":[drop_coin_and_exp, drop_weapon]},
                          "slime":{"name":"Slime",
                                    "hp":30, # base
@@ -657,4 +682,14 @@ characters:dict[dict] = {"mage":{"name":"Mage",
                                    "enemy_movement":enemy_movement_agro,
                                    "enemy_atk":enemy_atk_agro,
                                    "die":[drop_coin_and_exp, drop_weapon]},
+                         "the_randonnes":{"name":"The randonnes",
+                                 "level":30,
+                                 "hp":200, # base
+                                 "speed":0.03, # pixel per frame
+                                 "aceleration":0.005,
+                                 "weapon":BaseWeapon(**weapons["random_staff"].copy()),
+                                 "size":0.5,
+                                 "enemy_movement":enemy_movement_away,
+                                 "enemy_atk":enemy_atk_simple,
+                                 "die":[drop_coin_and_exp, drop_weapon]},
                             }
