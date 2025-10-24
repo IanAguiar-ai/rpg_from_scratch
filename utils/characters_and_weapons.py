@@ -3,7 +3,7 @@ import pygame
 import math
 from random import random, randint
 
-zoom_map:int = 100
+zoom_map:list[int] = [100]
 W, H = 1600, 900
 
 #######################################################################################
@@ -105,6 +105,13 @@ class BaseEntity:
                 if keys[pygame.K_i] and self._time_in_inventory > 20:
                     self._in_invetory = (self._in_invetory + 1) % 2
                     self._time_in_inventory:int = 0
+                elif keys[pygame.K_m]:
+                    zoom_map[0] = 10
+                elif keys[pygame.K_n]:
+                    zoom_map[0] = 30
+                elif keys[pygame.K_b]:
+                    zoom_map[0] = 100
+                    
 
             elif self.enemy:
                 key_enemy:str = self.enemy_movement(self, colliders, main_pos, actions, player)
@@ -225,8 +232,8 @@ class BaseEntity:
                     if lmb and (not self._lmb_prev):
                         sx, sy = pygame.mouse.get_pos()
                     
-                        wx = main_pos[0] + sx/zoom_map
-                        wy = main_pos[1] + sy/zoom_map
+                        wx = main_pos[0] + sx/zoom_map[0]
+                        wy = main_pos[1] + sy/zoom_map[0]
                         self.last_click_world = (wx, wy)
                         self.times[self.next_action] = 0
                         if self.functions[self.next_action] != None:
@@ -267,7 +274,7 @@ class BaseEntity:
             
     def plot(self, screen, main_pos:list[float]) -> None:
         # Entitie
-        x, y, s = (self.pos[0]-main_pos[0])*zoom_map, (self.pos[1]-main_pos[1])*zoom_map, self.size*zoom_map
+        x, y, s = (self.pos[0]-main_pos[0])*zoom_map[0], (self.pos[1]-main_pos[1])*zoom_map[0], self.size*zoom_map[0]
         box = pygame.Rect(x, y, s, s)
         pygame.draw.rect(screen, (0, 200, 255), box)
         fonte = pygame.font.SysFont(None, 12)
@@ -432,9 +439,9 @@ class BaseAtk:
         if not self.alive:
             return
 
-        x = int((self.pos[0] - main_pos[0]) * zoom_map)
-        y = int((self.pos[1] - main_pos[1]) * zoom_map)
-        s = int(self.size * zoom_map)
+        x = int((self.pos[0] - main_pos[0]) * zoom_map[0])
+        y = int((self.pos[1] - main_pos[1]) * zoom_map[0])
+        s = int(self.size * zoom_map[0])
         pygame.draw.rect(screen, (255, 230, 120), pygame.Rect(x, y, s, s))
 
 class BaseWeapon:

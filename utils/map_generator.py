@@ -20,7 +20,7 @@ class StaticObject:
         self.colision = colision
 
     def plot(self, screen, main_pos:list[float]) -> None:
-        x, y, s = (self.pos[0]-main_pos[0])*zoom_map, (self.pos[1]-main_pos[1])*zoom_map, self.size*zoom_map
+        x, y, s = (self.pos[0]-main_pos[0])*zoom_map[0], (self.pos[1]-main_pos[1])*zoom_map[0], self.size*zoom_map[0]
         box = pygame.Rect(x, y, s, s)
         pygame.draw.rect(screen, (200, 100, 100), box)
 
@@ -33,7 +33,7 @@ def close_entities(entities:list[StaticObject], pos:list[float]) -> list[StaticO
 
     new_list:list[StaticObject] = []
     for ent in entities:
-        if euclidean(ent.pos, pos) < 2*1600/zoom_map:
+        if euclidean(ent.pos, pos) < 2*1600/zoom_map[0]:
             new_list.append(ent)
 
     return new_list

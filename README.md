@@ -18,14 +18,16 @@ A rpg from scratch.
     - Levels;
     - Level system;
     - Weapon system;
-    - Level in weapons
+    - Level in weapons;
+    - See map in distance.
 
 # Weapons
 
 - 0.0.1:
     - Fire Staff;
     - Simple Bow;
-    - Claw.
+    - Claw;
+    - Random staff.
 
 # To make
 

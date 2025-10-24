@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
         ###########################################################################################
         
-        suavization(main_pos, [player.pos[0] - W//(zoom_map*2), player.pos[1] - H//(zoom_map*2)]) # Pos screen
+        suavization(main_pos, [player.pos[0] - W//(zoom_map[0]*2), player.pos[1] - H//(zoom_map[0]*2)]) # Pos screen
 
         if (_TICK_ % 60) == 0:
             for index in range(len(_TO_RENDER_)):
