@@ -455,6 +455,19 @@ class BaseWeapon:
         self.functions:dict = {"q":q, "e":e, "space":space}
         self.keyargs:dict = {"q":keyargs_q, "e":keyargs_e, "space":keyargs_space}
 
+class BaseIten:
+    def __init__(self, name:str, pause:int, function) -> None:
+        self.name:str = name
+        self.pause:int = pause
+        self.function = function
+        self._tick_now:int = 0
+
+        self.action()
+
+    def action(self, player:BaseEntity):
+        self._tick_now = (1+self._tick_now)%32_000
+        if (self._tick_now % self.pause) == 0:
+            self.function(player)
 
 ######################################################################################
 def _aabb_overlap(ax:float, ay:float, asize:float, bx:float, by:float, bsize:float) -> bool:
@@ -612,6 +625,10 @@ def drop_weapon(owner, colliders, actions, player) -> None:
                                 pos_final = [owner.pos[0]+(random()*owner.size*2-owner.size)*2, owner.pos[1]+random()*(owner.size*2-owner.size)*2],
                                 size = 0.15, life_span = 1200, id = owner._id,
                                 weapon = owner.weapon))
+
+#######################################################################################
+def iten_cure(player):
+    player.hp = int(player.hp + player.max_hp)
 
 #######################################################################################
 weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
