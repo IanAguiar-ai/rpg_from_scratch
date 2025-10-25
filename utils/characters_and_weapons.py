@@ -639,7 +639,8 @@ weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "space_time":450,
                                     "q":projectile_with_fragmentation,
                                     "e":projectile_simple,
-                                    "space":ability_transportation},
+                                    "space":ability_transportation,
+                                    "iten":},
                       "simple_bow":{"name":"Simple Bow",
                                     "chance_of_drop":1,
                                     "level":0,
@@ -669,12 +670,17 @@ weapons:dict[dict] = {"fire_staff":{"name":"Fire Staff",
                                     "space":None},
                      }
 
+itens:dict["dict"] = {"ring_of_cure":{"name":"Ring of Cure",
+                                      "pause":30,
+                                      "function":iten_cure}}
+
 #######################################################################################
 characters:dict[dict] = {"mage":{"name":"Mage",
                                  "hp":100, # base
                                  "speed":0.03, # pixel per frame
                                  "aceleration":0.005,
                                  "weapon":BaseWeapon(**weapons["fire_staff"].copy()),
+                                 "iten":BaseIten(*itens["ring_of_cure"]),
                                  "size":0.25,
                                  "enemy_movement":enemy_movement_away,
                                  "enemy_atk":enemy_atk_simple,
